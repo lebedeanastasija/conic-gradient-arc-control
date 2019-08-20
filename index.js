@@ -211,12 +211,78 @@ async function animate() {
 		});
 	});
 
-	if (!(neededMultiplier - 0.01 < multiplier && multiplier < neededMultiplier + 0.01)) {
+	if (!(neededMultiplier - 0.005 < multiplier && multiplier < neededMultiplier + 0.005)) {
 		await animate();
 	}
 }
 
 document.body.onkeydown = e => {
+	let newCurrentValue = currentValue;
+
+	if (e.code === 'ArrowRight') {
+		if (currentValue >= 20) {
+			newCurrentValue -= 5;
+		}
+	} else if (e.code === 'ArrowLeft') {
+		if (currentValue <= 25) {
+			newCurrentValue += 5;
+		}
+	}
+
+	if (newCurrentValue !== currentValue) {
+		currentValue = newCurrentValue;
+		neededMultiplier = STATIC_ANGLES[currentValue];
+		animate();
+	}
+};
+
+// Do relatively parent in real app
+const CX = window.innerWidth / 2, CY = window.innerHeight / 2;
+
+document.body.ontouchmove = e => {
+	// Remove this values -15, -130
+	const mX = e.touches[0].screenX - 15;
+	const mY = e.touches[0].screenY - 130;
+
+	const x = CX - mX;
+	const y = CY - mY;
+
+	let degs;
+
+	if (x < 0) {
+		const rads = Math.atan2(x, y);
+		degs = 360 - (rads * 180 / Math.PI * -1);
+	} else {
+		const rads = Math.atan2(x, y);
+		degs = rads * 180 / Math.PI;
+	}
+
+	degs = 360 - degs - 90;
+
+	// todo: change current value
+	const nextValue = findClosestValue(degs);
+	neededMultiplier = STATIC_ANGLES[nextValue];
+
+	if (nextValue !== currentValue) {
+		animate();
+	}
+};
+
+function findClosestValue(degs) {
+	if (degs < 360 * STATIC_ANGLES[15]) {
+		return 15;
+	} else if (degs < 360 * STATIC_ANGLES[20]) {
+		return 20;
+	} else if (degs < 360 * STATIC_ANGLES[25]) {
+		return 25;
+	} else if (degs < 360 * STATIC_ANGLES[30]) {
+		return 30;
+	} else {
+		return currentValue;
+	}
+}
+
+document.body.ommousemove = e => {
 	let newCurrentValue = currentValue;
 
 	if (e.code === 'ArrowRight') {
