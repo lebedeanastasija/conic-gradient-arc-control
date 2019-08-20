@@ -283,6 +283,8 @@ function findClosestValue(degs) {
 }
 
 document.body.ommousemove = e => {
+    	e.preventDefault();
+	
 	let newCurrentValue = currentValue;
 
 	if (e.code === 'ArrowRight') {
