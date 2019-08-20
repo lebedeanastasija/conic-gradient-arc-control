@@ -2,7 +2,7 @@ import {polarToCartesian} from './utils.js';
 
 const size = 320;
 
-const realStrokeWidth = 75;
+const realStrokeWidth = 89;
 const fakeStrokeWidth = 50;
 
 const overlapClip = 'overlapClip';
@@ -12,14 +12,24 @@ const angleX = 'angleX';
 
 const MULTIPLIER_MAX = 0.65;
 const MULTIPLIER_MIN = -0.15;
-let multiplier = 0.65;
+
+const STATIC_ANGLES = {
+	30: 0.65,
+	25: 0.45,
+	20: 0.25,
+	15: 0.005
+};
+
+let currentValue = 30;
+let neededMultiplier = STATIC_ANGLES[currentValue];
+let multiplier = neededMultiplier;
 
 const ARC_ID = 'arc';
 
 const _2PI = Math.PI * 2;
 
 const INITIAL_ANGLE_FOR_GRADIENT = 83;
-const INITIAL_ANGLE_ARC = _2PI * (-0.85/4);
+const INITIAL_ANGLE_ARC = _2PI * (-0.8/4);
 
 const INITIAL_ANGLE_FAKE_ARC = _2PI * (-1/4);
 
@@ -50,7 +60,7 @@ let arcsGroup;
 
 function drawArc(endAngle) {
 	const arcParameters = new SVG.PathArray(calculateArc(INITIAL_ANGLE_ARC, endAngle, realStrokeWidth));
-	const fakeArcParameters = new SVG.PathArray(calculateArc(INITIAL_ANGLE_FAKE_ARC, endAngle, fakeStrokeWidth));
+	const fakeArcParameters = new SVG.PathArray(calculateArc(INITIAL_ANGLE_FAKE_ARC, _2PI * 0.65, fakeStrokeWidth));
 
 	draw.fill('none');
 
@@ -185,17 +195,43 @@ function updateArc() {
 	document.querySelector(`#${ARC_ID}`).setAttribute('d', arcString);
 }
 
-let animationDirection = -1;
+async function animate() {
+	await new Promise(resolve => {
+		requestAnimationFrame(() => {
+			// if (multiplier > MULTIPLIER_MAX || multiplier < MULTIPLIER_MIN) {
+			// 	animationDirection *= -1;
+			// }
+			const animationDirection = Math.sign(neededMultiplier - multiplier);
 
-function animate() {
-	requestAnimationFrame(() => {
-		if (multiplier > MULTIPLIER_MAX || multiplier < MULTIPLIER_MIN) {
-			animationDirection *= -1;
-		}
-		multiplier += 0.01 * animationDirection;
-		updateArc();
-		animate();
+			multiplier += 0.01 * animationDirection;
+
+			updateArc();
+
+			resolve();
+		});
 	});
+
+	if (!(neededMultiplier - 0.01 < multiplier && multiplier < neededMultiplier + 0.01)) {
+		await animate();
+	}
 }
 
-animate();
+document.body.onkeydown = e => {
+	let newCurrentValue = currentValue;
+
+	if (e.code === 'ArrowRight') {
+		if (currentValue >= 20) {
+			newCurrentValue -= 5;
+		}
+	} else if (e.code === 'ArrowLeft') {
+		if (currentValue <= 25) {
+			newCurrentValue += 5;
+		}
+	}
+
+	if (newCurrentValue !== currentValue) {
+		currentValue = newCurrentValue;
+		neededMultiplier = STATIC_ANGLES[currentValue];
+		animate();
+	}
+};
